@@ -7,49 +7,42 @@ const outputFile = path.join(outputDir, 'logos.svg');
 
 if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-// Get all SVG files
 const files = fs.readdirSync(logosDir).filter(f => f.endsWith('.svg'));
-
 let svgContent = '';
 
 files.forEach((file, i) => {
-  let raw = fs.readFileSync(path.join(logosDir, file), 'utf8');
+  const raw = fs.readFileSync(path.join(logosDir, file), 'utf8');
 
-  // Remove XML headers & DOCTYPE
-  raw = raw.replace(/<\?xml[\s\S]*?\?>/g, '')
-           .replace(/<!DOCTYPE[\s\S]*?>/g, '');
+  // Strip XML prolog and outer <svg> tags so we can inline the inner markup.
+  // This is a simple approach; it works for most plain SVGs.
+  const withoutProlog = raw.replace(/<\?xml[\s\S]*?\?>/g, '')
+                           .replace(/<!DOCTYPE[\s\S]*?>/g, '');
+  const inner = withoutProlog.replace(/<svg[^>]*>/i, '').replace(/<\/svg>/i, '');
 
-  // Extract inner content of SVG
-  const inner = raw
-    .replace(/<svg[^>]*>/i, '')   // remove opening tag
-    .replace(/<\/svg>/i, '');     // remove closing tag
-
-  // Random placement
+  // Random start position and motion
   const x = Math.round(Math.random() * 900);
   const y = Math.round(Math.random() * 220);
-
-  // Random animation offset
   const dx = Math.round((Math.random() * 60) - 30);
   const dy = Math.round((Math.random() * 60) - 30);
   const duration = (4 + Math.random() * 6).toFixed(2);
 
-  // Wrap in a group with animation
+  // Wrap the inline SVG markup into a group and animate that group.
+  // We use animateTransform with absolute values (so no CORS/additive issues).
   svgContent += `
-    <g id="logo-${i}" transform="translate(${x}, ${y})">
-      ${inner}
-      <animateTransform
-        attributeName="transform"
-        type="translate"
-        values="${x},${y}; ${x + dx},${y + dy}; ${x},${y}"
-        dur="${duration}s"
-        repeatCount="indefinite"
-      />
-    </g>
-  `;
+  <g id="logo-${i}">
+    ${inner}
+    <animateTransform
+      attributeName="transform"
+      type="translate"
+      values="${x},${y};${x + dx},${y + dy};${x},${y}"
+      dur="${duration}s"
+      repeatCount="indefinite"/>
+  </g>\n`;
 });
 
-// Build the final SVG with background
-const finalSvg = <svg width="1000" height="300" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"> ${svgContent} </svg>;
+const finalSvg = `<svg width="1000" height="300" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  ${svgContent}
+</svg>`;
 
-fs.writeFileSync(outputFile, finalSvg.trim(), 'utf8');
+fs.writeFileSync(outputFile, finalSvg, 'utf8');
 console.log('Generated', outputFile);
