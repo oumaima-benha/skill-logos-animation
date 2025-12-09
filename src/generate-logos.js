@@ -49,16 +49,7 @@ files.forEach((file, i) => {
 });
 
 // Build the final SVG with background
-const finalSvg = `
-<svg width="1000" height="300" viewBox="0 0 1000 300"
-     xmlns="http://www.w3.org/2000/svg">
-
-  <!-- background -->
-  <rect width="1000" height="300" fill="#f5f5f5"/>
-
-  ${svgContent}
-</svg>
-`;
+const finalSvg = <svg width="1000" height="300" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"> ${svgContent} </svg>;
 
 fs.writeFileSync(outputFile, finalSvg.trim(), 'utf8');
 console.log('Generated', outputFile);
